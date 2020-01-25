@@ -1,68 +1,64 @@
 import React from 'react';
+import { connect } from 'react-redux';
+import { setSearchField, requestRobots } from '../redux_actions';
+
 import CardList from '../components/CardList';
-// import { robots } from './robots';
 import SearchBox from '../components/SearchBox';
 import Scroll from '../components/Scroll';
 import ErrorBoundary from '../components/ErrorBoundary';
+
 import './App.css';
 
-
-class App extends React.Component {
-	constructor() {
-		super()
-		this.state = {
-			// robots.js file can be used for this as well,
-			// in order not to trigger the last step of 
-			// Component Lifecycle (componentDidMount):
-			robots: [],
-			searchfield: ''
-		}
-	}
-
-	componentDidMount() {
-		fetch('https://jsonplaceholder.typicode.com/users')
-			.then(response => response.json())
-			.then(users => this.setState({ robots: users }));
-	}
-
-	// Anytime making own methods on a Component, use arrow functions.
-	onSearchChange = (event) => {
-		this.setState({ searchfield: event.target.value })
-	}
-
-	render() {
-		// with destructuring the repetitive this.state
-		// might be avoided for a much cleaner code:
-		const { robots, searchfield } = this.state; 
-		const filteredRobots = robots.filter(robot => {
-			return robot.name.toLowerCase().includes(searchfield.toLowerCase());
-		})
-		if (!robots.length) {
-			return <h4 className='f1 tc'>Loading</h4>
-		} else {
-			return (
-				<div className='tc'>
-					<h1 className='f1'>RoboFriends</h1>
-					<SearchBox searchChange={this.onSearchChange}/>
-					<Scroll>
-						<ErrorBoundary>
-							<CardList robots={filteredRobots}/>
-						</ErrorBoundary>
-					</Scroll>
-				</div>
-			);
-		}
+const mapStateToProps = (state) => {
+	return {
+		searchField: state.searchRobots.searchField,
+		robots: state.requestRobots.robots,
+		isPending: state.requestRobots.isPending
 	}
 }
 
-export default App;
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onSearchChange: (event) => dispatch(setSearchField(event.target.value)),
+    onRequestRobots: () => dispatch(requestRobots())
+  }
+}
 
+class App extends React.Component {
+	componentDidMount() {
+    this.props.onRequestRobots();
+  }
 
-// STATE
-// is used to communicate Parent with the child:
-// Simply means the description of your Application
-// Is able to change, dynamic.
-// Props are simply things that come out of state
-// A parent feeds STATE into a child component
-// The state that a child component receives 
-// is a PROPS. The child cannot change it.
+  render() {
+    const { robots, searchField, onSearchChange, isPending } = this.props;
+    const filteredRobots = robots.filter(robot => {
+      return robot.name.toLowerCase().includes(searchField.toLowerCase());
+    })
+		return (
+      <div className='tc'>
+        <h1 className='f1'>RoboFriends</h1>
+        <SearchBox searchChange={onSearchChange}/>
+        <Scroll>
+          { isPending ? <h1>Loading</h1> :
+            <ErrorBoundary>
+              <CardList robots={filteredRobots} />
+            </ErrorBoundary>
+          }
+        </Scroll>
+      </div>
+    );
+	}
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
+
+// Redux is a library for state management.
+// first create constants that will trigger the actions,
+// then create reducers that will parse these actions that
+// will create different states accordingly.
+// Pass these states into the app trough {connect} with
+// mapStateToProps and mapDispatchToProps.
+
+// within the index.js file create reducers and stores
+// for the ReactDOM object which will render and provide
+// all defined states, sustained with logs and middleware.
